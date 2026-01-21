@@ -165,7 +165,8 @@ func (ring *HashRing) GetNode(key string) (CacheNode, error) {
 	nodeHash := ring.sortedKeyOfNodes[index]
 
 	// Load the node from HashRing using the node hash and return it
-	if node, ok := ring.nodes.Load(nodeHash); ok {
+	// Convert int64 back to uint64 to match the key type used when storing
+	if node, ok := ring.nodes.Load(uint64(nodeHash)); ok {
 		if ring.config.EnableLogs {
 			log.Printf("[HashRing] Key '%s' (hash: %d) mapped to node (hash: %d)", key, hashVal, nodeHash)
 		}
