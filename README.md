@@ -1,6 +1,6 @@
 # Consistent Hashing Implementation
 
-A bare-bones implementation of consistent hashing in Go, providing efficient key-to-node mapping for distributed systems. This implementation allows you to dynamically add and remove nodes while minimizing key redistribution.
+> A bare-bones implementation of consistent hashing in Go, providing efficient key-to-node mapping for distributed systems. This implementation allows you to dynamically add and remove nodes while minimizing key redistribution.
 
 ![Consistent Hashing Overview](./consistenthashing.png)
 
@@ -10,16 +10,20 @@ Consistent hashing is a distributed hashing scheme that maps keys to nodes in a 
 
 ## How It Works
 
-The hash ring is a circular space where both nodes and keys are hashed and placed. Each key is assigned to the first node encountered when moving clockwise from the key's position. This ensures that when nodes are added or removed, only keys between the affected nodes need to be redistributed.
+-> The hash ring is a circular space where both nodes and keys are hashed and placed. Each key is assigned to the first node encountered when moving clockwise from the key's position. This ensures that when nodes are added or removed, only keys between the affected nodes need to be redistributed.
+
+-> The implementation uses Go's built-in `sync.Map` as a thread-safe hash table to store nodes keyed by their hash values. `sync.Map` is chosen over a regular map with mutex locking because it provides optimized concurrent read performance when there are many readers and few writers, which is the typical access pattern in distributed systems. The map stores nodes with their hash values as keys, allowing O(1) node retrieval after binary search identifies the target hash.
+
+-> A sorted slice of node hash values (`sortedKeyOfNodes`) is maintained alongside the map to enable efficient O(log n) binary search for finding the appropriate node. When a key needs to be mapped, its hash is computed, binary search finds the first node hash greater than or equal to the key hash, and then the node is retrieved from `sync.Map` using that hash value.
 
 ```mermaid
 graph LR
     A[Key Hash] -->|Hash Function| B[Hash Ring]
-    B -->|Binary Search| C[Find Node]
-    C -->|Clockwise| D[Assign to Node]
+    B -->|Binary Search| C[Find Node Hash]
+    C -->|sync.Map Lookup| D[Retrieve Node]
     
-    E[Add Node] -->|Minimal Redistribution| F[Update Ring]
-    G[Remove Node] -->|Reassign Keys| F
+    E[Add Node] -->|Store in sync.Map| F[Update Sorted Slice]
+    G[Remove Node] -->|Delete from sync.Map| F
     
     style B fill:#e1f5ff
     style C fill:#fff4e1
@@ -42,6 +46,8 @@ This implementation has a critical limitation: it cannot guarantee uniform distr
 ### Planned Features:
 
 - **Virtual Nodes (VNodes)**: Implement virtual node functionality to ensure uniform distribution. Each physical node will be represented by multiple virtual nodes on the hash ring, dramatically improving load balancing and reducing hotspots.
+
+- **Data Redundancy and Replication**: Add support for maintaining replica nodes to solve data redundancy problems. Each master node will have configurable replica nodes positioned clockwise on the hash ring. Replicas will maintain synchronized copies of data from their master node. When a master node fails, the system will automatically promote the next available replica node in clockwise order to become the new master, ensuring high availability and data durability without manual intervention.
 
 ## Usage
 
