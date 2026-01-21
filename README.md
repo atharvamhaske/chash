@@ -2,6 +2,8 @@
 
 > A bare-bones implementation of consistent hashing in Go, providing efficient key-to-node mapping for distributed systems. This implementation allows you to dynamically add and remove nodes while minimizing key redistribution.
 
+----
+
 ![Consistent Hashing Overview](./consistenthashing.png)
 
 ## Overview
@@ -10,11 +12,11 @@ Consistent hashing is a distributed hashing scheme that maps keys to nodes in a 
 
 ## How It Works
 
--> The hash ring is a circular space where both nodes and keys are hashed and placed. Each key is assigned to the first node encountered when moving clockwise from the key's position. This ensures that when nodes are added or removed, only keys between the affected nodes need to be redistributed.
+&gt; The hash ring is a circular space where both nodes and keys are hashed and placed. Each key is assigned to the first node encountered when moving clockwise from the key's position. This ensures that when nodes are added or removed, only keys between the affected nodes need to be redistributed.
 
--> The implementation uses Go's built-in `sync.Map` as a thread-safe hash table to store nodes keyed by their hash values. `sync.Map` is chosen over a regular map with mutex locking because it provides optimized concurrent read performance when there are many readers and few writers, which is the typical access pattern in distributed systems. The map stores nodes with their hash values as keys, allowing O(1) node retrieval after binary search identifies the target hash.
+&gt; The implementation uses Go's built-in `sync.Map` as a thread-safe hash table to store nodes keyed by their hash values. `sync.Map` is chosen over a regular map with mutex locking because it provides optimized concurrent read performance when there are many readers and few writers, which is the typical access pattern in distributed systems. The map stores nodes with their hash values as keys, allowing O(1) node retrieval after binary search identifies the target hash.
 
--> A sorted slice of node hash values (`sortedKeyOfNodes`) is maintained alongside the map to enable efficient O(log n) binary search for finding the appropriate node. When a key needs to be mapped, its hash is computed, binary search finds the first node hash greater than or equal to the key hash, and then the node is retrieved from `sync.Map` using that hash value.
+&gt; A sorted slice of node hash values (`sortedKeyOfNodes`) is maintained alongside the map to enable efficient O(log n) binary search for finding the appropriate node. When a key needs to be mapped, its hash is computed, binary search finds the first node hash greater than or equal to the key hash, and then the node is retrieved from `sync.Map` using that hash value.
 
 ```mermaid
 graph LR
@@ -80,9 +82,46 @@ ring.RemoveNode(node1)
 go get github.com/atharvamhaske/chash/hash-ring
 ```
 
+## Demo
+
+Run the interactive demo to see the hash ring in action:
+
+```bash
+go run main.go
+```
+
+The demo demonstrates:
+- Adding multiple nodes to the hash ring
+- Mapping keys to nodes
+- Key redistribution after node removal
+- Duplicate node prevention
+
 ## Testing
+
+Run unit tests:
 
 ```bash
 go test -v ./hash-ring
 ```
+
+## Benchmarks
+
+Run performance benchmarks to evaluate the hash ring operations:
+
+```bash
+go test -bench=. -benchmem ./hash-ring
+```
+
+### Benchmark Results
+
+Performance metrics on my machine => AMD Ryzen 5 5600H (Linux, amd64):
+
+| Operation | Time Complexity | Performance | Memory | Allocations | Description |
+|-----------|----------------|-------------|--------|-------------|-------------|
+| AddNode | O(n log n) | 82555 ns/op | 178 B/op | 4 allocs/op | Adding a single node to the ring |
+| GetNode | O(log n) | 67.98 ns/op | 19 B/op | 2 allocs/op | Key lookup with 100 nodes |
+| RemoveNode | O(n log n) | ~300-600 ns/op | ~100-200 B/op | ~2-3 allocs/op | Removing a node from the ring |
+| BinarySearch | O(log n) | ~50-100 ns/op | - | - | Finding node position in sorted ring |
+
+The implementation provides efficient O(log n) lookup time complexity using binary search, combined with O(1) node retrieval from sync.Map, making it suitable for high-throughput distributed systems.
 
