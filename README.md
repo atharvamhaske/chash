@@ -125,3 +125,11 @@ Performance metrics on my machine => AMD Ryzen 5 5600H (Linux, amd64):
 
 The implementation provides efficient O(log n) lookup time complexity using binary search, combined with O(1) node retrieval from sync.Map, making it suitable for high-throughput distributed systems.
 
+## Contributing
+
+This project is open for contributions! We welcome pull requests, bug reports, feature requests, and improvements. Please feel free to submit issues or open pull requests to help improve this consistent hashing implementation.
+
+## License
+
+This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
+
